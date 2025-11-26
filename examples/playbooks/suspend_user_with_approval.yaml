@@ -1,0 +1,71 @@
+name: suspend_user_with_approval
+version: 1.0.0
+description: Suspend user account after analyst approval
+tags:
+  - identity
+  - manual_approval
+author: IR Team
+
+triggers:
+  - type: incident_created
+    conditions:
+      tags:
+        - compromised_account
+
+steps:
+  gather_context:
+    type: action
+    connector: dummy_identity
+    operation: get_user_info
+    input:
+      username: "{{ incident.payload.username }}"
+    next: notify_analyst
+
+  notify_analyst:
+    type: action
+    connector: dummy_slack
+    operation: send_message
+    input:
+      channel: "#soc-alerts"
+      message: "🚨 Possible account compromise: {{ incident.payload.username }}"
+    next: request_approval
+
+  request_approval:
+    type: manual
+    prompt: "Suspend user account {{ incident.payload.username }}?"
+    input_fields:
+      - name: justification
+        type: text
+        required: true
+    on_approved: suspend_account
+    on_rejected: log_rejection
+
+  suspend_account:
+    type: action
+    connector: dummy_identity
+    operation: suspend_user
+    input:
+      username: "{{ incident.payload.username }}"
+      reason: "{{ manual.justification }}"
+    next: notify_completion
+
+  notify_completion:
+    type: action
+    connector: dummy_slack
+    operation: send_message
+    input:
+      channel: "#soc-alerts"
+      message: "✅ Account {{ incident.payload.username }} suspended"
+    next: null
+
+  log_rejection:
+    type: action
+    connector: http
+    operation: request
+    input:
+      method: POST
+      url: "http://internal-logging/api/decisions"
+      body:
+        decision: "rejected"
+        reason: "{{ manual.justification }}"
+    next: null

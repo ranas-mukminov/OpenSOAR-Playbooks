@@ -1,0 +1,1 @@
+"""OpenSOAR Playbooks - Core package."""

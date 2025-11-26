@@ -1,0 +1,108 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opensoar-playbooks"
+version = "0.1.0"
+description = "Open-source SOAR playbook engine for incident response automation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "OpenSOAR Contributors", email = "contributors@opensoar.dev"}
+]
+keywords = ["soar", "security", "automation", "incident-response", "orchestration"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Monitoring",
+]
+
+dependencies = [
+    "fastapi[all]>=0.104.0",
+    "sqlmodel>=0.0.14",
+    "psycopg2-binary>=2.9.9",
+    "alembic>=1.12.0",
+    "jinja2>=3.1.2",
+    "pyyaml>=6.0.1",
+    "python-json-logger>=2.0.7",
+    "pydantic>=2.4.0",
+    "pydantic-settings>=2.0.3",
+    "httpx>=0.25.0",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.10.0",
+    "ruff>=0.1.0",
+    "mypy>=1.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ranas-mukminov/OpenSOAR-Playbooks"
+Documentation = "https://github.com/ranas-mukminov/OpenSOAR-Playbooks/tree/main/docs"
+Repository = "https://github.com/ranas-mukminov/OpenSOAR-Playbooks"
+Issues = "https://github.com/ranas-mukminov/OpenSOAR-Playbooks/issues"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = ["app"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=app",
+    "--cov-report=term-missing",
+]
+asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+plugins = ["pydantic.mypy"]

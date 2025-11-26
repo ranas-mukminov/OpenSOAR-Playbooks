@@ -1,0 +1,89 @@
+name: phishing_email_response
+version: 1.0.0
+description: Automated phishing email containment
+tags:
+  - email
+  - phishing
+  - automated
+author: Security Engineering
+
+triggers:
+  - type: event_received
+    conditions:
+      tags:
+        - phishing
+        - email
+
+vars:
+  quarantine_folder: "Phishing_Quarantine"
+
+steps:
+  extract_indicators:
+    type: action
+    connector: http
+    operation: request
+    input:
+      method: GET
+      url: "http://mail-server/api/emails/{{ event.payload.email_id }}"
+    next: check_url_reputation
+
+  check_url_reputation:
+    type: action
+    connector: dummy_reputation
+    operation: lookup_urls
+    input:
+      urls:
+        - "http://example.com/phish"
+        - "http://malicious.test"
+    next: decide_quarantine
+
+  decide_quarantine:
+    type: condition
+    expression: "{{ steps.check_url_reputation.output.malicious_count > 0 }}"
+    on_true: quarantine_email
+    on_false: mark_suspicious
+
+  quarantine_email:
+    type: action
+    connector: http
+    operation: request
+    input:
+      method: POST
+      url: "http://mail-server/api/emails/{{ event.payload.email_id }}/quarantine"
+      body:
+        folder: "{{ vars.quarantine_folder }}"
+    next: block_sender
+
+  block_sender:
+    type: action
+    connector: http
+    operation: request
+    input:
+      method: POST
+      url: "http://mail-server/api/senders/block"
+      body:
+        sender: "{{ event.payload.sender }}"
+    next: create_incident
+
+  create_incident:
+    type: action
+    connector: http
+    operation: request
+    input:
+      method: POST
+      url: "http://localhost:8000/incidents"
+      body:
+        title: "Phishing email from {{ event.payload.sender }}"
+        severity: "high"
+    next: null
+
+  mark_suspicious:
+    type: action
+    connector: http
+    operation: request
+    input:
+      method: POST
+      url: "http://mail-server/api/emails/{{ event.payload.email_id }}/tag"
+      body:
+        tag: "suspicious"
+    next: null

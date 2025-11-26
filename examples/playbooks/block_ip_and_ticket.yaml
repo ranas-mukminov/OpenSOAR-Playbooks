@@ -1,0 +1,68 @@
+name: block_ip_and_ticket
+version: 1.0.0
+description: Block malicious IP and create incident ticket
+tags:
+  - network
+  - blocking
+  - automated
+author: SOC Team
+
+triggers:
+  - type: incident_created
+    conditions:
+      severity:
+        - critical
+        - high
+      tags:
+        - malicious_ip
+
+vars:
+  ticket_queue: "security_incidents"
+  block_duration: 3600
+
+steps:
+  check_reputation:
+    type: action
+    connector: dummy_reputation
+    operation: lookup_ip
+    input:
+      ip: "{{ incident.payload.src_ip }}"
+    next: decide_action
+
+  decide_action:
+    type: condition
+    expression: "{{ steps.check_reputation.output.score < 30 }}"
+    on_true: block_ip
+    on_false: create_ticket_only
+
+  block_ip:
+    type: action
+    connector: dummy_firewall
+    operation: block_ip
+    input:
+      ip: "{{ incident.payload.src_ip }}"
+      duration: "{{ vars.block_duration }}"
+      reason: "Malicious activity detected"
+    next: create_ticket
+
+  create_ticket:
+    type: action
+    connector: dummy_ticketing
+    operation: create_ticket
+    input:
+      queue: "{{ vars.ticket_queue }}"
+      title: "Blocked IP: {{ incident.payload.src_ip }}"
+      description: "Automated response - IP blocked due to incident {{ incident.id }}"
+      severity: "{{ incident.severity }}"
+    next: null
+
+  create_ticket_only:
+    type: action
+    connector: dummy_ticketing
+    operation: create_ticket
+    input:
+      queue: "{{ vars.ticket_queue }}"
+      title: "Review IP: {{ incident.payload.src_ip }}"
+      description: "Low reputation score - manual review required"
+      severity: "medium"
+    next: null
