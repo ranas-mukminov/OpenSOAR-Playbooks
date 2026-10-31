@@ -3,12 +3,11 @@ Pydantic schemas for API request/response validation.
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 from app.core.models import IncidentSeverity, IncidentStatus, PlaybookRunStatus
-
 
 # Playbook Schemas
 
@@ -25,9 +24,9 @@ class PlaybookResponse(BaseModel):
     id: int
     name: str
     version: str
-    description: Optional[str] = None
+    description: str | None = None
     tags: list[str] = []
-    author: Optional[str] = None
+    author: str | None = None
     enabled: bool
     created_at: datetime
     updated_at: datetime
@@ -51,7 +50,7 @@ class IncidentCreate(BaseModel):
 
     title: str = Field(..., min_length=1)
     severity: IncidentSeverity = IncidentSeverity.MEDIUM
-    owner: Optional[str] = None
+    owner: str | None = None
     payload: dict[str, Any] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
 
@@ -59,12 +58,12 @@ class IncidentCreate(BaseModel):
 class IncidentUpdate(BaseModel):
     """Request schema for updating an incident."""
 
-    title: Optional[str] = None
-    status: Optional[IncidentStatus] = None
-    severity: Optional[IncidentSeverity] = None
-    owner: Optional[str] = None
-    payload: Optional[dict[str, Any]] = None
-    tags: Optional[list[str]] = None
+    title: str | None = None
+    status: IncidentStatus | None = None
+    severity: IncidentSeverity | None = None
+    owner: str | None = None
+    payload: dict[str, Any] | None = None
+    tags: list[str] | None = None
 
 
 class IncidentResponse(BaseModel):
@@ -74,7 +73,7 @@ class IncidentResponse(BaseModel):
     title: str
     status: IncidentStatus
     severity: IncidentSeverity
-    owner: Optional[str] = None
+    owner: str | None = None
     payload: dict[str, Any]
     tags: list[str]
     created_at: datetime
@@ -97,15 +96,15 @@ class IncidentListResponse(BaseModel):
 class PlaybookRunCreate(BaseModel):
     """Request schema for starting a playbook run."""
 
-    incident_id: Optional[int] = None
-    event_id: Optional[int] = None
+    incident_id: int | None = None
+    event_id: int | None = None
 
 
 class PlaybookRunResumeRequest(BaseModel):
     """Request schema for resuming a paused run."""
 
     decision: str = Field(..., pattern="^(approved|rejected)$")
-    manual_input: Optional[dict[str, Any]] = None
+    manual_input: dict[str, Any] | None = None
 
 
 class PlaybookRunResponse(BaseModel):
@@ -113,16 +112,16 @@ class PlaybookRunResponse(BaseModel):
 
     id: int
     playbook_id: int
-    incident_id: Optional[int] = None
-    event_id: Optional[int] = None
+    incident_id: int | None = None
+    event_id: int | None = None
     status: PlaybookRunStatus
-    current_step_id: Optional[str] = None
+    current_step_id: str | None = None
     context: dict[str, Any]
     step_logs: list[dict[str, Any]]
-    manual_task: Optional[dict[str, Any]] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
+    manual_task: dict[str, Any] | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    error_message: str | None = None
 
     class Config:
         from_attributes = True
@@ -156,7 +155,7 @@ class EventResponse(BaseModel):
     payload: dict[str, Any]
     severity: IncidentSeverity
     tags: list[str]
-    incident_id: Optional[int] = None
+    incident_id: int | None = None
 
     class Config:
         from_attributes = True
@@ -169,11 +168,11 @@ class ErrorResponse(BaseModel):
     """Error response schema."""
 
     error: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 class SuccessResponse(BaseModel):
     """Generic success response."""
 
     message: str
-    data: Optional[dict[str, Any]] = None
+    data: dict[str, Any] | None = None

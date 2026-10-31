@@ -85,7 +85,8 @@ class DummyTicketingConnector(BaseConnector):
         self.tickets[ticket_id].update(updates)
 
         logger.info(
-            f"[TICKETING] Updated ticket {ticket_id}", extra={"ticket_id": ticket_id, "updates": updates}
+            f"[TICKETING] Updated ticket {ticket_id}",
+            extra={"ticket_id": ticket_id, "updates": updates},
         )
 
         return {

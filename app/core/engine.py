@@ -5,9 +5,9 @@ Orchestrates playbook execution with step routing and state management.
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.connectors.base import registry
 from app.core.context import ExecutionContext
@@ -36,8 +36,8 @@ class PlaybookEngine:
     async def run_playbook(
         self,
         playbook_id: int,
-        incident_id: Optional[int] = None,
-        event_id: Optional[int] = None,
+        incident_id: int | None = None,
+        event_id: int | None = None,
     ) -> PlaybookRun:
         """
         Start playbook execution.
@@ -66,7 +66,7 @@ class PlaybookEngine:
         try:
             playbook_data = self.dsl.parse(playbook.yaml_content)
         except PlaybookValidationError as e:
-            raise PlaybookEngineError(f"Invalid playbook: {e}")
+            raise PlaybookEngineError(f"Invalid playbook: {e}") from e
 
         # Create execution context
         context = ExecutionContext(playbook_data, incident, event)
@@ -93,19 +93,21 @@ class PlaybookEngine:
 
         # Execute playbook
         try:
-            await self._execute_from_step(run, playbook_data, context, get_first_step(playbook_data))
+            await self._execute_from_step(
+                run, playbook_data, context, get_first_step(playbook_data)
+            )
         except Exception as e:
             logger.exception(f"Playbook run {run.id} failed", extra={"run_id": run.id})
             run.status = PlaybookRunStatus.FAILED
             run.error_message = str(e)
             run.completed_at = datetime.utcnow()
             self.session.commit()
-            raise PlaybookEngineError(f"Execution failed: {e}")
+            raise PlaybookEngineError(f"Execution failed: {e}") from e
 
         return run
 
     async def resume_run(
-        self, run_id: int, decision: str, manual_input: Optional[dict[str, Any]] = None
+        self, run_id: int, decision: str, manual_input: dict[str, Any] | None = None
     ) -> PlaybookRun:
         """
         Resume a paused playbook run (after manual approval).
@@ -177,7 +179,7 @@ class PlaybookEngine:
             run.error_message = str(e)
             run.completed_at = datetime.utcnow()
             self.session.commit()
-            raise PlaybookEngineError(f"Resume failed: {e}")
+            raise PlaybookEngineError(f"Resume failed: {e}") from e
 
         return run
 
@@ -186,7 +188,7 @@ class PlaybookEngine:
         run: PlaybookRun,
         playbook_data: dict[str, Any],
         context: ExecutionContext,
-        step_id: Optional[str],
+        step_id: str | None,
     ) -> None:
         """Execute playbook starting from a specific step."""
         current_step_id = step_id
@@ -194,7 +196,9 @@ class PlaybookEngine:
         while current_step_id is not None:
             step = playbook_data["steps"].get(current_step_id)
             if not step:
-                logger.error(f"Step '{current_step_id}' not found", extra={"step_id": current_step_id})
+                logger.error(
+                    f"Step '{current_step_id}' not found", extra={"step_id": current_step_id}
+                )
                 break
 
             run.current_step_id = current_step_id
@@ -210,9 +214,13 @@ class PlaybookEngine:
             step_type = step["type"]
 
             if step_type == "action":
-                current_step_id = await self._execute_action_step(run, step, current_step_id, context)
+                current_step_id = await self._execute_action_step(
+                    run, step, current_step_id, context
+                )
             elif step_type == "condition":
-                current_step_id = await self._execute_condition_step(run, step, current_step_id, context)
+                current_step_id = await self._execute_condition_step(
+                    run, step, current_step_id, context
+                )
             elif step_type == "manual":
                 await self._execute_manual_step(run, step, current_step_id, context)
                 return  # Pause execution
@@ -231,7 +239,7 @@ class PlaybookEngine:
 
     async def _execute_action_step(
         self, run: PlaybookRun, step: dict[str, Any], step_id: str, context: ExecutionContext
-    ) -> Optional[str]:
+    ) -> str | None:
         """Execute an action step."""
         connector_name = step["connector"]
         operation = step["operation"]
@@ -243,8 +251,8 @@ class PlaybookEngine:
         # Get connector
         try:
             connector = registry.get(connector_name)
-        except ValueError as e:
-            raise PlaybookEngineError(f"Connector not found: {connector_name}")
+        except ValueError:
+            raise PlaybookEngineError(f"Connector not found: {connector_name}") from None
 
         # Execute operation
         try:
@@ -254,7 +262,7 @@ class PlaybookEngine:
                 f"Connector execution failed: {e}",
                 extra={"connector": connector_name, "operation": operation},
             )
-            raise PlaybookEngineError(f"Connector '{connector_name}' failed: {e}")
+            raise PlaybookEngineError(f"Connector '{connector_name}' failed: {e}") from e
 
         # Store output
         context.set_step_output(step_id, result)
@@ -276,7 +284,7 @@ class PlaybookEngine:
 
     async def _execute_condition_step(
         self, run: PlaybookRun, step: dict[str, Any], step_id: str, context: ExecutionContext
-    ) -> Optional[str]:
+    ) -> str | None:
         """Execute a condition step."""
         expression = step["expression"]
 
@@ -286,7 +294,7 @@ class PlaybookEngine:
             # Convert string result to boolean
             result = str(rendered).lower() in ("true", "1", "yes")
         except Exception as e:
-            raise PlaybookEngineError(f"Condition evaluation failed: {e}")
+            raise PlaybookEngineError(f"Condition evaluation failed: {e}") from e
 
         # Determine next step
         next_step_id = step["on_true"] if result else step["on_false"]
@@ -335,7 +343,7 @@ class PlaybookEngine:
 
     async def _execute_wait_step(
         self, run: PlaybookRun, step: dict[str, Any], step_id: str, context: ExecutionContext
-    ) -> Optional[str]:
+    ) -> str | None:
         """Execute a wait step (simple delay)."""
         duration = step["duration"]
 
@@ -358,7 +366,7 @@ class PlaybookEngine:
         self.session.commit()
 
 
-def get_first_step(playbook_data: dict[str, Any]) -> Optional[str]:
+def get_first_step(playbook_data: dict[str, Any]) -> str | None:
     """
     Determine the first step to execute.
     Returns the first step ID from the steps dictionary.

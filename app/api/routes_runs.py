@@ -29,7 +29,7 @@ async def run_playbook_background(
     engine = PlaybookEngine(session)
     try:
         await engine.run_playbook(playbook_id, incident_id, event_id)
-    except PlaybookEngineError as e:
+    except PlaybookEngineError:
         # Error is already logged and saved to run
         pass
 
@@ -56,7 +56,7 @@ async def run_playbook(
     try:
         run = await engine.run_playbook(playbook_id, run_data.incident_id, run_data.event_id)
     except PlaybookEngineError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     return run
 
@@ -134,6 +134,6 @@ async def resume_run(
     try:
         run = await engine.resume_run(run_id, resume_data.decision, resume_data.manual_input)
     except PlaybookEngineError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     return run

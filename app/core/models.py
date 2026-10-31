@@ -10,7 +10,7 @@ from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 # Enums
-class IncidentStatus(str, Enum):
+class IncidentStatus(str, Enum):  # noqa: UP042
     """Incident lifecycle statuses."""
 
     NEW = "new"
@@ -20,7 +20,7 @@ class IncidentStatus(str, Enum):
     CLOSED = "closed"
 
 
-class IncidentSeverity(str, Enum):
+class IncidentSeverity(str, Enum):  # noqa: UP042
     """Incident severity levels."""
 
     LOW = "low"
@@ -29,7 +29,7 @@ class IncidentSeverity(str, Enum):
     CRITICAL = "critical"
 
 
-class PlaybookRunStatus(str, Enum):
+class PlaybookRunStatus(str, Enum):  # noqa: UP042
     """Playbook execution statuses."""
 
     PENDING = "pending"
@@ -51,7 +51,7 @@ class Event(SQLModel, table=True):
 
     __tablename__ = "events"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     source: str = Field(index=True)  # e.g., "siem", "edr", "firewall"
     timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
     payload: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
@@ -60,7 +60,7 @@ class Event(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
-    incident_id: Optional[int] = Field(default=None, foreign_key="incidents.id")
+    incident_id: int | None = Field(default=None, foreign_key="incidents.id")
     incident: Optional["Incident"] = Relationship(back_populates="events")
 
 
@@ -72,11 +72,11 @@ class Incident(SQLModel, table=True):
 
     __tablename__ = "incidents"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     title: str = Field(index=True)
     status: IncidentStatus = Field(default=IncidentStatus.NEW, index=True)
     severity: IncidentSeverity = Field(default=IncidentSeverity.MEDIUM, index=True)
-    owner: Optional[str] = Field(default=None, index=True)
+    owner: str | None = Field(default=None, index=True)
     payload: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     tags: list[str] = Field(default=[], sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
@@ -95,15 +95,15 @@ class Playbook(SQLModel, table=True):
 
     __tablename__ = "playbooks"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     version: str = Field(default="1.0.0")
-    description: Optional[str] = None
+    description: str | None = None
     yaml_content: str  # Full YAML definition
     parsed_data: dict[str, Any] = Field(default={}, sa_column=Column(JSON))  # Parsed structure
     triggers: list[dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
     tags: list[str] = Field(default=[], sa_column=Column(JSON))
-    author: Optional[str] = None
+    author: str | None = None
     enabled: bool = Field(default=True, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -120,29 +120,29 @@ class PlaybookRun(SQLModel, table=True):
 
     __tablename__ = "playbook_runs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     playbook_id: int = Field(foreign_key="playbooks.id", index=True)
-    incident_id: Optional[int] = Field(default=None, foreign_key="incidents.id", index=True)
-    event_id: Optional[int] = Field(default=None, foreign_key="events.id", index=True)
+    incident_id: int | None = Field(default=None, foreign_key="incidents.id", index=True)
+    event_id: int | None = Field(default=None, foreign_key="events.id", index=True)
     status: PlaybookRunStatus = Field(default=PlaybookRunStatus.PENDING, index=True)
 
     # Execution context and state
-    current_step_id: Optional[str] = None  # Current step being executed
+    current_step_id: str | None = None  # Current step being executed
     context: dict[str, Any] = Field(default={}, sa_column=Column(JSON))  # Variables, step outputs
     step_logs: list[dict[str, Any]] = Field(default=[], sa_column=Column(JSON))  # Execution log
 
     # Manual step data (for pause/resume)
-    manual_task: Optional[dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
+    manual_task: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
     # Timestamps
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Error tracking
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     # Relationships
     playbook: Playbook = Relationship(back_populates="playbook_runs")
-    incident: Optional[Incident] = Relationship(back_populates="playbook_runs")
-    event: Optional[Event] = Relationship(back_populates=None)
+    incident: Incident | None = Relationship(back_populates="playbook_runs")
+    event: Event | None = Relationship(back_populates=None)

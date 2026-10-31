@@ -6,7 +6,14 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from app.core.connectors import dummy_firewall, dummy_identity, dummy_reputation, dummy_slack, dummy_ticketing, http
+from app.core.connectors import (
+    dummy_firewall,
+    dummy_identity,
+    dummy_reputation,
+    dummy_slack,
+    dummy_ticketing,
+    http,
+)
 from app.core.connectors.base import ConnectorRegistry
 
 

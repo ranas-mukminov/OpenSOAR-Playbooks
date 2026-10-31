@@ -39,7 +39,7 @@ async def create_playbook(
         # Parse and validate playbook
         parsed = dsl.parse(playbook_data.yaml_content)
     except PlaybookValidationError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid playbook: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid playbook: {e}") from e
 
     # Check if playbook with same name exists
     stmt = select(Playbook).where(Playbook.name == parsed["name"])
@@ -82,7 +82,9 @@ async def list_playbooks(
     return PlaybookListResponse(playbooks=list(playbooks), total=total)
 
 
-@router.get("/{playbook_id}", response_model=PlaybookResponse, responses={404: {"model": ErrorResponse}})
+@router.get(
+    "/{playbook_id}", response_model=PlaybookResponse, responses={404: {"model": ErrorResponse}}
+)
 async def get_playbook(playbook_id: int, session: Session = Depends(get_session)) -> Playbook:
     """Get a specific playbook by ID."""
     playbook = session.get(Playbook, playbook_id)

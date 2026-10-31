@@ -142,7 +142,9 @@ steps:
         dsl = PlaybookDSL()
         context = {"incident": {"id": 123, "severity": "high"}, "vars": {"name": "test"}}
 
-        result = dsl.render_template("Incident {{ incident.id }} is {{ incident.severity }}", context)
+        result = dsl.render_template(
+            "Incident {{ incident.id }} is {{ incident.severity }}", context
+        )
         assert result == "Incident 123 is high"
 
     def test_render_value_with_dict(self):
@@ -150,7 +152,11 @@ steps:
         dsl = PlaybookDSL()
         context = {"incident": {"ip": "192.0.2.1"}}
 
-        data = {"static": "value", "dynamic": "IP: {{ incident.ip }}", "nested": {"ip": "{{ incident.ip }}"}}
+        data = {
+            "static": "value",
+            "dynamic": "IP: {{ incident.ip }}",
+            "nested": {"ip": "{{ incident.ip }}"},
+        }
 
         result = dsl.render_value(data, context)
         assert result["static"] == "value"

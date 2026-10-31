@@ -2,11 +2,10 @@
 YAML playbook DSL parsing and validation.
 """
 
-import re
 from typing import Any
 
 import yaml
-from jinja2 import Environment, Template, TemplateSyntaxError
+from jinja2 import Environment, TemplateSyntaxError
 
 
 class PlaybookValidationError(Exception):
@@ -40,7 +39,7 @@ class PlaybookDSL:
         try:
             data = yaml.safe_load(yaml_content)
         except yaml.YAMLError as e:
-            raise PlaybookValidationError(f"Invalid YAML: {e}")
+            raise PlaybookValidationError(f"Invalid YAML: {e}") from e
 
         if not isinstance(data, dict):
             raise PlaybookValidationError("Playbook must be a YAML dictionary")
@@ -98,8 +97,7 @@ class PlaybookDSL:
         valid_types = ["action", "condition", "manual", "wait"]
         if step_type not in valid_types:
             raise PlaybookValidationError(
-                f"Step '{step_id}' has invalid type '{step_type}'. "
-                f"Valid types: {valid_types}"
+                f"Step '{step_id}' has invalid type '{step_type}'. " f"Valid types: {valid_types}"
             )
 
         # Type-specific validation
@@ -123,22 +121,16 @@ class PlaybookDSL:
 
         # Validate input parameters (if present)
         if "input" in step and not isinstance(step["input"], dict):
-            raise PlaybookValidationError(
-                f"Action step '{step_id}' input must be a dictionary"
-            )
+            raise PlaybookValidationError(f"Action step '{step_id}' input must be a dictionary")
 
         # Validate Jinja2 templates in input
         if "input" in step:
             self._validate_templates(step["input"], step_id)
 
-    def _validate_condition_step(
-        self, step_id: str, step: dict[str, Any], all_steps: dict
-    ) -> None:
+    def _validate_condition_step(self, step_id: str, step: dict[str, Any], all_steps: dict) -> None:
         """Validate condition step."""
         if "expression" not in step:
-            raise PlaybookValidationError(
-                f"Condition step '{step_id}' missing 'expression' field"
-            )
+            raise PlaybookValidationError(f"Condition step '{step_id}' missing 'expression' field")
 
         # Validate expression is a Jinja2 template
         try:
@@ -146,7 +138,7 @@ class PlaybookDSL:
         except TemplateSyntaxError as e:
             raise PlaybookValidationError(
                 f"Condition step '{step_id}' has invalid expression: {e}"
-            )
+            ) from e
 
         # Validate branching
         for branch in ["on_true", "on_false"]:
@@ -160,9 +152,7 @@ class PlaybookDSL:
                     f"Condition step '{step_id}' references non-existent step: {step[branch]}"
                 )
 
-    def _validate_manual_step(
-        self, step_id: str, step: dict[str, Any], all_steps: dict
-    ) -> None:
+    def _validate_manual_step(self, step_id: str, step: dict[str, Any], all_steps: dict) -> None:
         """Validate manual (approval) step."""
         if "prompt" not in step:
             raise PlaybookValidationError(f"Manual step '{step_id}' missing 'prompt' field")
@@ -170,9 +160,7 @@ class PlaybookDSL:
         # Validate branching
         for branch in ["on_approved", "on_rejected"]:
             if branch not in step:
-                raise PlaybookValidationError(
-                    f"Manual step '{step_id}' missing '{branch}' field"
-                )
+                raise PlaybookValidationError(f"Manual step '{step_id}' missing '{branch}' field")
             # Allow null for terminal steps
             if step[branch] is not None and step[branch] not in all_steps:
                 raise PlaybookValidationError(
@@ -199,7 +187,7 @@ class PlaybookDSL:
                 except TemplateSyntaxError as e:
                     raise PlaybookValidationError(
                         f"Step '{step_id}' has invalid template syntax: {e}"
-                    )
+                    ) from e
         elif isinstance(data, dict):
             for value in data.values():
                 self._validate_templates(value, step_id)

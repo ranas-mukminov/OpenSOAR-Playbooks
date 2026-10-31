@@ -3,8 +3,7 @@ Execution context manager for playbook runs.
 Maintains runtime state and provides template rendering.
 """
 
-from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from app.core.dsl import PlaybookDSL
 from app.core.models import Event, Incident
@@ -19,8 +18,8 @@ class ExecutionContext:
     def __init__(
         self,
         playbook_data: dict[str, Any],
-        incident: Optional[Incident] = None,
-        event: Optional[Event] = None,
+        incident: Incident | None = None,
+        event: Event | None = None,
     ):
         self.playbook_data = playbook_data
         self.incident = incident
@@ -45,9 +44,9 @@ class ExecutionContext:
                 "owner": self.incident.owner,
                 "payload": self.incident.payload,
                 "tags": self.incident.tags,
-                "created_at": self.incident.created_at.isoformat()
-                if self.incident.created_at
-                else None,
+                "created_at": (
+                    self.incident.created_at.isoformat() if self.incident.created_at else None
+                ),
             }
 
         if self.event:
@@ -83,8 +82,8 @@ class ExecutionContext:
         cls,
         data: dict[str, Any],
         playbook_data: dict[str, Any],
-        incident: Optional[Incident] = None,
-        event: Optional[Event] = None,
+        incident: Incident | None = None,
+        event: Event | None = None,
     ) -> "ExecutionContext":
         """Deserialize context from database."""
         ctx = cls(playbook_data, incident, event)

@@ -12,7 +12,14 @@ from sqlmodel import SQLModel
 
 from app.api import routes_incidents, routes_playbooks, routes_runs
 from app.config import settings
-from app.core.connectors import dummy_firewall, dummy_identity, dummy_reputation, dummy_slack, dummy_ticketing, http
+from app.core.connectors import (
+    dummy_firewall,
+    dummy_identity,
+    dummy_reputation,
+    dummy_slack,
+    dummy_ticketing,
+    http,
+)
 from app.core.connectors.base import registry
 from app.db.session import engine
 
@@ -21,9 +28,7 @@ logger = logging.getLogger()
 
 if settings.log_format == "json":
     log_handler = logging.StreamHandler()
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s"
-    )
+    formatter = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
     log_handler.setFormatter(formatter)
     logger.addHandler(log_handler)
 else:
