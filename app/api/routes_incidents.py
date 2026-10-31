@@ -2,7 +2,7 @@
 Incident management API routes.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
@@ -78,7 +78,7 @@ async def update_incident(
     for key, value in update_dict.items():
         setattr(incident, key, value)
 
-    incident.updated_at = datetime.utcnow()
+    incident.updated_at = datetime.now(UTC)
     session.commit()
     session.refresh(incident)
 
