@@ -135,12 +135,12 @@ See [examples/playbooks/](examples/playbooks/) for complete examples:
 
 ---
 
-## Commercial Support
+## Support
 
 **Professional services available from [run-as-daemon.ru](https://run-as-daemon.ru):**
 
 - ✅ SOAR platform implementation and customization
-- ✅ Custom connector development for proprietary systems
+- ✅ Custom connector development for third-party systems
 - ✅ Infrastructure audit and security automation consulting
 - ✅ DevOps / SRE support and monitoring setup
 - ✅ Backup and disaster recovery planning
