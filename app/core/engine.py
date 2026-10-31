@@ -4,7 +4,7 @@ Orchestrates playbook execution with step routing and state management.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlmodel import Session
@@ -79,7 +79,7 @@ class PlaybookEngine:
             status=PlaybookRunStatus.RUNNING,
             context=context.serialize(),
             step_logs=[],
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(UTC),
         )
 
         self.session.add(run)
@@ -100,7 +100,7 @@ class PlaybookEngine:
             logger.exception(f"Playbook run {run.id} failed", extra={"run_id": run.id})
             run.status = PlaybookRunStatus.FAILED
             run.error_message = str(e)
-            run.completed_at = datetime.utcnow()
+            run.completed_at = datetime.now(UTC)
             self.session.commit()
             raise PlaybookEngineError(f"Execution failed: {e}") from e
 
@@ -177,7 +177,7 @@ class PlaybookEngine:
         except Exception as e:
             run.status = PlaybookRunStatus.FAILED
             run.error_message = str(e)
-            run.completed_at = datetime.utcnow()
+            run.completed_at = datetime.now(UTC)
             self.session.commit()
             raise PlaybookEngineError(f"Resume failed: {e}") from e
 
@@ -231,7 +231,7 @@ class PlaybookEngine:
 
         # Execution completed
         run.status = PlaybookRunStatus.COMPLETED
-        run.completed_at = datetime.utcnow()
+        run.completed_at = datetime.now(UTC)
         run.current_step_id = None
         self.session.commit()
 
@@ -360,9 +360,13 @@ class PlaybookEngine:
 
     def _log_step(self, run: PlaybookRun, step_id: str, data: dict[str, Any]) -> None:
         """Add step execution log to run."""
-        log_entry = {"step_id": step_id, "timestamp": datetime.utcnow().isoformat(), **data}
+        log_entry = {"step_id": step_id, "timestamp": datetime.now(UTC).isoformat(), **data}
 
-        run.step_logs.append(log_entry)
+        # Reassign, do not append in place: SQLAlchemy does not track
+        # in-place mutation of a plain list in a JSON column, so an append
+        # was silently lost on commit (the session expires objects and
+        # reloads step_logs as [] from the database).
+        run.step_logs = [*run.step_logs, log_entry]
         self.session.commit()
 
 
