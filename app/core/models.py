@@ -2,11 +2,17 @@
 SQLModel ORM models for OpenSOAR Playbooks domain entities.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Optional
 
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+
+
+def _utcnow() -> datetime:
+    """Timezone-aware now: SQLModel 0.0.48 stores datetimes as UTCDateTime
+    and rejects naive values on bind."""
+    return datetime.now(UTC)
 
 
 # Enums
@@ -53,11 +59,11 @@ class Event(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     source: str = Field(index=True)  # e.g., "siem", "edr", "firewall"
-    timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
+    timestamp: datetime = Field(default_factory=_utcnow, index=True)
     payload: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     severity: IncidentSeverity = Field(default=IncidentSeverity.MEDIUM, index=True)
     tags: list[str] = Field(default=[], sa_column=Column(JSON))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
 
     # Relationships
     incident_id: int | None = Field(default=None, foreign_key="incidents.id")
@@ -79,8 +85,8 @@ class Incident(SQLModel, table=True):
     owner: str | None = Field(default=None, index=True)
     payload: dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     tags: list[str] = Field(default=[], sa_column=Column(JSON))
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow, index=True)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
     # Relationships
     events: list[Event] = Relationship(back_populates="incident")
@@ -105,8 +111,8 @@ class Playbook(SQLModel, table=True):
     tags: list[str] = Field(default=[], sa_column=Column(JSON))
     author: str | None = None
     enabled: bool = Field(default=True, index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
     # Relationships
     playbook_runs: list["PlaybookRun"] = Relationship(back_populates="playbook")
@@ -137,7 +143,7 @@ class PlaybookRun(SQLModel, table=True):
     # Timestamps
     started_at: datetime | None = None
     completed_at: datetime | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
 
     # Error tracking
     error_message: str | None = None
