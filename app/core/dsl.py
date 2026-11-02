@@ -5,7 +5,8 @@ YAML playbook DSL parsing and validation.
 from typing import Any
 
 import yaml
-from jinja2 import Environment, TemplateSyntaxError
+from jinja2 import TemplateSyntaxError
+from jinja2.sandbox import SandboxedEnvironment
 
 
 class PlaybookValidationError(Exception):
@@ -21,7 +22,9 @@ class PlaybookDSL:
     """
 
     def __init__(self):
-        self.jinja_env = Environment(autoescape=False)
+        # Playbook text is rendered with incident data. A full Environment
+        # exposes Python globals to whoever can store a playbook.
+        self.jinja_env = SandboxedEnvironment(autoescape=False)
 
     def parse(self, yaml_content: str) -> dict[str, Any]:
         """

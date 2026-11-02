@@ -50,7 +50,8 @@ pip install -e ".[dev]"
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your database credentials
+# Edit .env with your database credentials.
+# Replace API_KEY. The server refuses to start while the sample value is unchanged.
 
 # Initialize database
 alembic upgrade head

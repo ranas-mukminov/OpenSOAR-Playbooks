@@ -47,6 +47,12 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown tasks.
     """
     # Startup
+    placeholders = {"<YOUR_API_KEY>", "your-secret-api-key-change-this"}
+    if settings.api_key.strip() in placeholders:
+        raise RuntimeError(
+            "Refusing to start: API_KEY is still a published placeholder. "
+            "Set a secret API_KEY that is not in the repository."
+        )
     logger.info("Starting OpenSOAR Playbooks API", extra={"version": settings.app_version})
 
     # Create database tables
